@@ -14,6 +14,7 @@ mod tests {
             #[cfg(windows)]
             {
                 let pid = std::process::id();
+                println!("send CTRL_C event to myself on windows platform");
                 unsafe {
                     winapi::um::wincon::GenerateConsoleCtrlEvent(
                         winapi::um::wincon::CTRL_C_EVENT,
@@ -37,6 +38,7 @@ mod tests {
 
         send_ctrlc_later(Duration::from_secs(2));
 
+        println!("Waiting for Ctrl-C...");
         receiver.recv().unwrap();
     }
 }
