@@ -1,8 +1,19 @@
 use socket2::Domain;
-use std::net::{SocketAddr, TcpListener, TcpStream};
+use std::{
+    io::{Read, Write},
+    net::{SocketAddr, TcpListener, TcpStream},
+    os::fd::{AsRawFd, FromRawFd},
+    time::Duration,
+};
 
 fn main() {
-    let listener = spawn_listen("0.0.0.0:8115");
+    std::thread::spawn(|| {
+        let listener = spawn_listen("0.0.0.0:8115");
+        let (mut stream, addr) = listener.accept().unwrap();
+        let mut buf = String::new();
+        stream.read_to_string(&mut buf).unwrap();
+        println!("Received: {} from {}", buf, addr);
+    });
     let stream1 = dial_tor("127.0.0.1:9050");
     let stream2 = dial_tor("127.0.0.1:9050");
     let stream3 = dial_tor("127.0.0.1:9050");
@@ -18,8 +29,10 @@ fn dial_tor(addr: &str) -> TcpStream {
     socket.set_reuse_address(true).unwrap();
     socket.set_reuse_port(true).unwrap();
     socket.set_nonblocking(true).unwrap();
-    let _ = socket.connect(&address);
-    let stream: TcpStream = socket.into();
+    socket
+        .connect_timeout(&address, Duration::from_secs(1))
+        .unwrap();
+    let mut stream: TcpStream = socket.into();
     stream
 }
 
@@ -31,7 +44,7 @@ fn spawn_listen(addr: &str) -> TcpListener {
     let address = address.into();
     socket.set_reuse_address(true).unwrap();
     socket.set_reuse_port(true).unwrap();
-    socket.set_nonblocking(true).unwrap();
+    socket.set_nonblocking(false).unwrap();
     socket.bind(&address).unwrap();
     socket.listen(128).unwrap();
 
