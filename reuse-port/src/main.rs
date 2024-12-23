@@ -1,8 +1,7 @@
 use socket2::Domain;
 use std::{
-    io::{Read, Write},
+    io::Read,
     net::{SocketAddr, TcpListener, TcpStream},
-    os::fd::{AsRawFd, FromRawFd},
     time::Duration,
 };
 
@@ -29,6 +28,11 @@ fn dial_tor(addr: &str) -> TcpStream {
     socket.set_reuse_address(true).unwrap();
     socket.set_reuse_port(true).unwrap();
     socket.set_nonblocking(true).unwrap();
+    {
+        let listen_address: SocketAddr = "0.0.0.0:8115".parse().unwrap();
+        let listen_address = listen_address.into();
+        socket.bind(&listen_address).unwrap();
+    }
     socket
         .connect_timeout(&address, Duration::from_secs(1))
         .unwrap();
